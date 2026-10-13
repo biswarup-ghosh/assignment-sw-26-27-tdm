@@ -89,3 +89,29 @@ VALUES (1, 'pre', 'FL', -2.0, 0.10), (1, 'pre', 'FR', -1.9, 0.10),
        (1, 'pre', 'RL', -1.5, 0.20), (1, 'pre', 'RR', -1.5, 0.20),
        (2, 'pre', 'FL', -2.4, 0.10), (2, 'pre', 'FR', -2.5, 0.10),
        (2, 'pre', 'RL', -1.5, 0.20), (2, 'pre', 'RR', -1.4, 0.20);
+
+INSERT INTO data_file (test_id, run_id, file_name, file_type, storage_location,
+                       size_bytes, recorded_at, notes)
+VALUES (1, 1,    'run1_telemetry.csv', 'telemetry', 'storage/2026-10-12/run1_telemetry.csv',
+        1250000, '2026-10-12 10:05:00', 'Logger export, full run'),
+       (1, 2,    'run2_telemetry.csv', 'telemetry', 'storage/2026-10-12/run2_telemetry.csv',
+        1890000, '2026-10-12 12:10:00', 'Logger export, full run'),
+       (1, 2,    'run2_onboard.mp4',   'video',     'storage/2026-10-12/run2_onboard.mp4',
+        85400000, '2026-10-12 12:10:00', 'Onboard camera'),
+       (1, NULL, 'pit_wall_notes.pdf', 'document',  'storage/2026-10-12/pit_wall_notes.pdf',
+        210000, NULL, 'Notes for the whole test day');
+
+INSERT INTO team_member (full_name)
+VALUES ('Luca Verdi'), ('Sara Neri'), ('Paolo Gialli');
+
+INSERT INTO staff_role (name)
+VALUES ('Lead'), ('Telemetry engineer'), ('Mechanic'), ('Timekeeper');
+
+INSERT INTO station (track_location_id, name, description)
+VALUES (1, 'Pit wall',       'Strategy and timing, next to the pit lane'),
+       (1, 'Telemetry desk', 'Live telemetry and data logging');
+
+INSERT INTO station_assignment (test_id, station_id, team_member_id, staff_role_id)
+VALUES (1, 1, 1, 1),
+       (1, 1, 3, 4),
+       (1, 2, 2, 2);

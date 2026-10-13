@@ -189,6 +189,79 @@ CREATE TABLE alignment_measurement (
 );
 
 -- ---------------------------------------------------------------------
+-- FILE INDEX
+-- ---------------------------------------------------------------------
+
+-- Index of telemetry and log files. Only the location of each file is
+-- stored, never its content.
+CREATE TABLE data_file (
+    id                INTEGER PRIMARY KEY,
+    test_id           INTEGER NOT NULL REFERENCES test(id),
+    run_id            INTEGER REFERENCES run(id),
+    file_name         TEXT NOT NULL,
+    file_type         TEXT NOT NULL CHECK (file_type IN
+                          ('telemetry','log','video','photo','document','other')),
+    storage_location  TEXT NOT NULL UNIQUE,
+    size_bytes        INTEGER CHECK (size_bytes >= 0),
+    checksum_sha256   TEXT CHECK (checksum_sha256 IS NULL OR length(checksum_sha256) = 64),
+    recorded_at       DATETIME,
+    notes             TEXT
+);
+
+-- A file linked to a run must belong to the same test as that run
+CREATE TRIGGER data_file_run_check
+BEFORE INSERT ON data_file
+FOR EACH ROW
+WHEN NEW.run_id IS NOT NULL
+ AND (SELECT test_id FROM run WHERE id = NEW.run_id) <> NEW.test_id
+BEGIN
+    SELECT RAISE(ABORT, 'file run does not belong to the file test');
+END;
+
+-- ---------------------------------------------------------------------
+-- TEST-DAY STATIONS (POSTAZIONI)
+-- ---------------------------------------------------------------------
+
+CREATE TABLE team_member (
+    id         INTEGER PRIMARY KEY,
+    full_name  TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE staff_role (
+    id    INTEGER PRIMARY KEY,
+    name  TEXT NOT NULL UNIQUE
+);
+
+-- A reusable station that exists at a physical location
+CREATE TABLE station (
+    id                 INTEGER PRIMARY KEY,
+    track_location_id  INTEGER NOT NULL REFERENCES track_location(id),
+    name               TEXT NOT NULL,
+    description        TEXT,
+    UNIQUE (track_location_id, name)
+);
+
+-- Who staffed which station, with which role, on which test
+CREATE TABLE station_assignment (
+    id              INTEGER PRIMARY KEY,
+    test_id         INTEGER NOT NULL REFERENCES test(id),
+    station_id      INTEGER NOT NULL REFERENCES station(id),
+    team_member_id  INTEGER NOT NULL REFERENCES team_member(id),
+    staff_role_id   INTEGER NOT NULL REFERENCES staff_role(id),
+    UNIQUE (test_id, station_id, team_member_id)
+);
+
+-- A station can only be staffed at the location where the test takes place
+CREATE TRIGGER station_assignment_location_check
+BEFORE INSERT ON station_assignment
+FOR EACH ROW
+WHEN (SELECT track_location_id FROM station WHERE id = NEW.station_id)
+     <> (SELECT track_location_id FROM test WHERE id = NEW.test_id)
+BEGIN
+    SELECT RAISE(ABORT, 'station is not at the location of this test');
+END;
+
+-- ---------------------------------------------------------------------
 -- VIEWS (always calculated from the real data, never stored)
 -- ---------------------------------------------------------------------
 
