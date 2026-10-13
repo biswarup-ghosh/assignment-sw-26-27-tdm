@@ -20,9 +20,6 @@ VALUES ('Soft', 'Hoosier'), ('Medium', 'Hoosier');
 INSERT INTO tyre_set (compound_id, code)
 VALUES (1, 'SET-001'), (2, 'SET-002');
 
--- Parameter catalogue. Ids are assigned in this order:
--- 1 spring, 2 damper comp, 3 damper reb, 4 ARB front, 5 ARB rear, 6 camber,
--- 7 toe, 8 corner weight, 9 shim, 10 power limit, 11 TV gain, 12 max rpm
 INSERT INTO setup_parameter (code, name, category, scope, unit)
 VALUES ('spring_rate_n_mm',          'Spring rate',            'suspension', 'corner',  'N/mm'),
        ('damper_compression_clicks', 'Damper compression',     'suspension', 'corner',  'clicks'),
@@ -43,7 +40,6 @@ VALUES (1, 'Baseline', NULL, 'Initial setup of the season', '2026-10-12 09:00:00
            'Understeer in slow corners: stiffer front springs, more front camber, higher power limit',
            '2026-10-12 11:30:00');
 
--- Seeded values use parameters 1 (spring), 4 (front ARB), 6 (camber), 10 (power limit)
 INSERT INTO setup_value (setup_id, parameter_id, corner, value)
 VALUES (1, 1, 'FL', 40),   (1, 1, 'FR', 40),   (1, 1, 'RL', 50),   (1, 1, 'RR', 50),
        (1, 6, 'FL', -2.0), (1, 6, 'FR', -2.0), (1, 6, 'RL', -1.5), (1, 6, 'RR', -1.5),
@@ -55,14 +51,26 @@ VALUES (1, 1, 'FL', 40),   (1, 1, 'FR', 40),   (1, 1, 'RL', 50),   (1, 1, 'RR', 
 INSERT INTO test (season_id, vehicle_id, track_location_id, test_date, status)
 VALUES (1, 1, 1, '2026-10-12', 'done');
 
-INSERT INTO run (test_id, run_number, driver_id, track_layout_id, tyre_set_id, setup_id,
-                 ambient_temp_c, asphalt_temp_c, expected_laps, completed_laps)
-VALUES (1, 1, 1, 1, 1, 1, 22.5, 34.0, 3, 3),
-       (1, 2, 2, 2, 2, 2, 21.0, 31.5, 3, 3);
+-- THE PLAN (made before the test day)
+INSERT INTO planned_run (test_id, plan_number, driver_id, track_layout_id, setup_id,
+                         expected_laps, target_lap_time_s, battery_charge_limit_pct,
+                         cancelled, cancel_reason)
+VALUES (1, 1, 1, 1, 1, 3,  62.0, 100, 0, NULL),
+       (1, 2, 1, 2, 1, 3,  95.0, 100, 0, NULL),
+       (1, 3, 2, 1, 2, 3,  62.5, 100, 1, 'Battery temperature too high, slot dropped');
+
+-- WHAT ACTUALLY HAPPENED
+INSERT INTO run (test_id, run_number, planned_run_id, driver_id, track_layout_id,
+                 tyre_set_id, setup_id, ambient_temp_c, asphalt_temp_c,
+                 expected_laps, completed_laps)
+VALUES (1, 1, 1,    1, 1, 1, 1, 22.5, 34.0, 3, 3),
+       (1, 2, 2,    2, 2, 2, 2, 21.0, 31.5, 3, 3),
+       (1, 3, NULL, 1, 1, 1, 2, 23.0, 35.0, 2, 2);
 
 INSERT INTO lap (run_id, lap_number, lap_time_s)
 VALUES (1, 1, 62.3), (1, 2, 61.8), (1, 3, 62.0),
-       (2, 1, 95.1), (2, 2, 94.6), (2, 3, 94.9);
+       (2, 1, 95.1), (2, 2, 94.6), (2, 3, 94.9),
+       (3, 1, 61.5), (3, 2, 61.2);
 
 INSERT INTO tyre_measurement
     (run_id, phase, corner, pressure_kpa, temp_outer_c, temp_center_c, temp_inner_c)

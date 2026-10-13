@@ -112,6 +112,27 @@ BEGIN
 END;
 
 -- ---------------------------------------------------------------------
+-- PLANNING
+-- ---------------------------------------------------------------------
+
+-- A planned run: what the team intended to do, decided before the test
+CREATE TABLE planned_run (
+    id                        INTEGER PRIMARY KEY,
+    test_id                   INTEGER NOT NULL REFERENCES test(id),
+    plan_number               INTEGER NOT NULL CHECK (plan_number >= 1),
+    driver_id                 INTEGER NOT NULL REFERENCES driver(id),
+    track_layout_id           INTEGER NOT NULL REFERENCES track_layout(id),
+    setup_id                  INTEGER REFERENCES setup(id),
+    expected_laps             INTEGER NOT NULL CHECK (expected_laps >= 0),
+    target_lap_time_s         REAL CHECK (target_lap_time_s > 0),
+    battery_charge_limit_pct  REAL CHECK (battery_charge_limit_pct BETWEEN 0 AND 100),
+    cancelled                 INTEGER NOT NULL DEFAULT 0 CHECK (cancelled IN (0, 1)),
+    cancel_reason             TEXT,
+    CHECK (cancelled = 0 OR cancel_reason IS NOT NULL),
+    UNIQUE (test_id, plan_number)
+);
+
+-- ---------------------------------------------------------------------
 -- RUNS AND LAPS
 -- ---------------------------------------------------------------------
 
@@ -119,6 +140,7 @@ CREATE TABLE run (
     id               INTEGER PRIMARY KEY,
     test_id          INTEGER NOT NULL REFERENCES test(id),
     run_number       INTEGER NOT NULL CHECK (run_number >= 1),
+    planned_run_id   INTEGER UNIQUE REFERENCES planned_run(id),
     driver_id        INTEGER NOT NULL REFERENCES driver(id),
     track_layout_id  INTEGER NOT NULL REFERENCES track_layout(id),
     tyre_set_id      INTEGER REFERENCES tyre_set(id),
@@ -209,3 +231,43 @@ JOIN setup_value AS b
 JOIN setup_parameter AS sp ON sp.id = a.parameter_id
 JOIN setup AS s            ON s.id = cur.setup_id
 WHERE a.value <> b.value;
+
+-- Plan versus reality, one row per planned run plus one row per unplanned run
+CREATE VIEW planned_vs_actual AS
+SELECT p.test_id          AS test_id,
+       p.plan_number      AS plan_number,
+       r.run_number       AS run_number,
+       CASE
+           WHEN r.id IS NULL AND p.cancelled = 1 THEN 'cancelled'
+           WHEN r.id IS NULL                     THEN 'not executed'
+           WHEN r.driver_id       <> p.driver_id
+             OR r.track_layout_id <> p.track_layout_id
+             OR r.setup_id        IS NOT p.setup_id
+             OR r.completed_laps  IS NOT p.expected_laps THEN 'modified'
+           ELSE 'as planned'
+       END                AS outcome,
+       pd.full_name       AS planned_driver,
+       ad.full_name       AS actual_driver,
+       ps.name            AS planned_setup,
+       aset.name          AS actual_setup,
+       p.expected_laps    AS planned_laps,
+       r.completed_laps   AS actual_laps,
+       p.cancel_reason    AS cancel_reason
+FROM planned_run AS p
+LEFT JOIN run     AS r    ON r.planned_run_id = p.id
+JOIN driver       AS pd   ON pd.id = p.driver_id
+LEFT JOIN driver  AS ad   ON ad.id = r.driver_id
+LEFT JOIN setup   AS ps   ON ps.id = p.setup_id
+LEFT JOIN setup   AS aset ON aset.id = r.setup_id
+
+UNION ALL
+
+SELECT r.test_id, NULL, r.run_number, 'added',
+       NULL, d.full_name,
+       NULL, s.name,
+       NULL, r.completed_laps,
+       NULL
+FROM run AS r
+JOIN driver      AS d ON d.id = r.driver_id
+LEFT JOIN setup  AS s ON s.id = r.setup_id
+WHERE r.planned_run_id IS NULL;
