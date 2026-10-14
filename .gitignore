@@ -1,0 +1,5 @@
+tdm.db
+.venv/
+__pycache__/
+*.pyc
+import_rejects.csv

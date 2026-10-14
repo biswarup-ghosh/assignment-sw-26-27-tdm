@@ -112,7 +112,7 @@ Without the script: `python3 create_db.py`, then `uvicorn backend.app:app --relo
 ## 7. Status and known limitations
 
 Built: database, backend, frontend, CSV importer, automated tests, setup script.
-Docker: DOCKER_STATUS_SENTENCE
+Docker: a Dockerfile and a compose file (docker compose up --build), tested on macOS with Docker Desktop.
 
 Not done or simplified:
 
