@@ -1,0 +1,5 @@
+Date,Track,Layout,Driver,Run,Tyre set,Compound,Ambient temp,Asphalt temp,Lap times,reject_reason
+29-09-2026,Test Area Padova,Skidpad,Marco Rossi,2,SET-001,Soft,18.5,24,5.9; 5.8; 5.85,unknown track layout 'Skidpad'
+31/02/2026,Test Area Padova,Autocross A,Marco Rossi,4,SET-001,Soft,20,25,62.0,unreadable date '31/02/2026'
+06/10/2026,Test Area Padova,Autocross A,,1,SET-002,Medium,20,28,62.0,driver is missing
+06/10/2026,Test Area Padova,Autocross A,Giulia Bianchi,1,SET-002,Medium,20,28,62.0; -3; 61.8,unreadable lap time '-3'

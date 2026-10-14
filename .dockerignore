@@ -1,0 +1,6 @@
+.venv/
+.git/
+__pycache__/
+*.pyc
+tdm.db
+import_rejects.csv
