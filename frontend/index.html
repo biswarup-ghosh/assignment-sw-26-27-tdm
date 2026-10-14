@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Data Manager</title>
+<style>
+  /* ---------- colours (change --accent to re-theme the whole page) ---------- */
+  :root {
+    --bg: #f4f5f8;       --card: #ffffff;     --text: #1c2030;    --muted: #6b7285;
+    --line: #e4e7ee;     --row-alt: #fafbfd;  --row-hover: #fff3f5;
+    --accent: #c8102e;   --accent-dark: #9d0b23; --accent-soft: #fdecef;
+    --shadow: 0 1px 2px rgba(20,24,40,.06), 0 4px 14px rgba(20,24,40,.06);
+    --ok-bg: #e3f6ea;    --ok: #13703a;
+    --warn-bg: #fff3d6;  --warn: #8a5a00;
+    --bad-bg: #fde4e4;   --bad: #a61b1b;
+    --info-bg: #e3eefc;  --info: #1a4f9c;
+    --neutral-bg: #eceef3; --neutral: #4a5163;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12141b;     --card: #1b1e28;     --text: #e8eaf2;    --muted: #9aa1b5;
+      --line: #2b3040;   --row-alt: #1f2330;  --row-hover: #2b2230;
+      --accent: #d9253f; --accent-dark: #b81c33; --accent-soft: #3a1a22;
+      --shadow: none;
+      --ok-bg: #12351f;  --ok: #6fdc97;
+      --warn-bg: #3a2c0a; --warn: #f2c35b;
+      --bad-bg: #3d1717; --bad: #ff8d8d;
+      --info-bg: #14284a; --info: #8db9ff;
+      --neutral-bg: #2a2e3b; --neutral: #b4bacb;
+    }
+  }
+
+  /* ---------- page ---------- */
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--text); line-height: 1.45; }
+  main { max-width: 1150px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  a { color: var(--accent); }
+
+  /* ---------- top bar ---------- */
+  .topbar { background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: #fff; position: sticky; top: 0; z-index: 10;
+            box-shadow: 0 2px 10px rgba(0,0,0,.25); }
+  .topbar-inner { max-width: 1150px; margin: 0 auto; padding: .8rem 1rem;
+                  display: flex; flex-wrap: wrap; gap: .6rem 1.5rem;
+                  align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: .8rem; }
+  .logo { background: #fff; color: var(--accent-dark); font-weight: 800; letter-spacing: .05em;
+          padding: .35rem .6rem; border-radius: 8px; }
+  .brand h1 { margin: 0; font-size: 1.15rem; }
+  .brand p { margin: 0; font-size: .78rem; opacity: .85; }
+  nav { display: flex; gap: .4rem; }
+  nav a { color: #fff; text-decoration: none; font-size: .9rem; padding: .35rem .8rem;
+          border-radius: 999px; background: rgba(255,255,255,.15); }
+  nav a:hover { background: rgba(255,255,255,.3); }
+
+  /* ---------- cards ---------- */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+          box-shadow: var(--shadow); padding: 1.2rem 1.3rem; margin-bottom: 1.4rem;
+          scroll-margin-top: 5rem; }
+  .card-head h2 { margin: 0; font-size: 1.15rem; }
+  .card-head p { margin: .15rem 0 1rem; color: var(--muted); font-size: .88rem; }
+
+  /* ---------- forms ---------- */
+  .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+             gap: .9rem; align-items: end; margin-bottom: .8rem; }
+  .field label { display: block; font-size: .75rem; font-weight: 600; color: var(--muted);
+                 text-transform: uppercase; letter-spacing: .04em; margin-bottom: .25rem; }
+  select, input { width: 100%; padding: .5rem .6rem; font: inherit; color: var(--text);
+                  background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+  select:focus, input:focus, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px; }
+  .actions { display: flex; gap: .5rem; }
+  .btn { padding: .55rem 1.1rem; font: inherit; font-weight: 600; cursor: pointer;
+         color: #fff; background: var(--accent); border: 0; border-radius: 999px; }
+  .btn:hover { background: var(--accent-dark); }
+  .btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn.secondary:hover { background: var(--row-alt); }
+  .inline { display: flex; flex-wrap: wrap; gap: .8rem; align-items: end; margin-bottom: 1rem; }
+  .inline .field { min-width: 200px; }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px;
+                margin: .6rem 0 1rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th { background: var(--row-alt); color: var(--muted); text-align: left; white-space: nowrap;
+       font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; padding: .55rem .7rem; }
+  td { padding: .5rem .7rem; border-top: 1px solid var(--line); }
+  td.num { font-variant-numeric: tabular-nums; }
+  tr:nth-child(even) td { background: var(--row-alt); }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover td { background: var(--row-hover); }
+  tr.selected td { background: var(--accent-soft) !important; }
+
+  /* ---------- small bits ---------- */
+  .summary { margin: .2rem 0; color: var(--muted); font-size: .9rem; }
+  .summary strong { color: var(--text); }
+  .empty, .loading { color: var(--muted); padding: .6rem 0; margin: 0; }
+  .error { color: var(--bad); background: var(--bad-bg); padding: .7rem .9rem;
+           border-radius: 8px; }
+  .badge { display: inline-block; padding: .12rem .6rem; border-radius: 999px;
+           font-size: .75rem; font-weight: 600; white-space: nowrap;
+           background: var(--neutral-bg); color: var(--neutral); }
+  .b-as-planned, .b-done { background: var(--ok-bg); color: var(--ok); }
+  .b-modified { background: var(--warn-bg); color: var(--warn); }
+  .b-cancelled { background: var(--bad-bg); color: var(--bad); }
+  .b-added, .b-planned { background: var(--info-bg); color: var(--info); }
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .3rem 0 .8rem; }
+  .chip { background: var(--neutral-bg); color: var(--neutral); border-radius: 999px;
+          padding: .15rem .7rem; font-size: .8rem; }
+
+  /* ---------- run detail ---------- */
+  .detail { margin-top: 1.2rem; padding-top: 1rem; border-top: 2px solid var(--accent); }
+  .detail h3 { margin: 0 0 .2rem; }
+  details { border: 1px solid var(--line); border-radius: 10px; margin: .6rem 0; }
+  summary { cursor: pointer; padding: .65rem .9rem; font-weight: 600; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; display: inline-block; margin-right: .5rem;
+                    color: var(--accent); transition: transform .15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  summary .count { background: var(--neutral-bg); color: var(--neutral); font-size: .72rem;
+                   padding: .05rem .5rem; border-radius: 999px; margin-left: .3rem; }
+  details .table-wrap { margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+  details .empty { padding: .7rem .9rem; }
+
+  /* ---------- mileage bars ---------- */
+  .bar-row { display: grid; grid-template-columns: minmax(110px, 190px) 1fr 80px;
+             gap: .8rem; align-items: center; margin: .5rem 0; font-size: .9rem; }
+  .bar-track { background: var(--neutral-bg); border-radius: 999px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 999px;
+              background: linear-gradient(90deg, var(--accent), var(--accent-dark)); }
+  .bar-value { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="logo">TDM</span>
+      <div>
+        <h1>Test Data Manager</h1>
+        <p>Formula Student testing history</p>
+      </div>
+    </div>
+    <nav>
+      <a href="#search">Search runs</a>
+      <a href="#mileage">Mileage</a>
+      <a href="#tests">Test days</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="card" id="search">
+    <div class="card-head">
+      <h2>Search runs</h2>
+      <p>Leave a field on “Any” or empty to ignore that filter. Filters combine with AND.</p>
+    </div>
+    <div class="filters">
+      <div class="field"><label for="season">Season</label>
+        <select id="season"><option value="">Any</option></select></div>
+      <div class="field"><label for="driver">Driver</label>
+        <select id="driver"><option value="">Any</option></select></div>
+      <div class="field"><label for="compound">Tyre compound</label>
+        <select id="compound"><option value="">Any</option></select></div>
+      <div class="field"><label for="asphalt_min">Asphalt from (°C)</label>
+        <input id="asphalt_min" type="number" step="0.1" placeholder="e.g. 30"></div>
+      <div class="field"><label for="asphalt_max">Asphalt to (°C)</label>
+        <input id="asphalt_max" type="number" step="0.1" placeholder="e.g. 40"></div>
+      <div class="actions">
+        <button class="btn" id="searchBtn" type="button">Search</button>
+        <button class="btn secondary" id="resetBtn" type="button">Reset</button>
+      </div>
+    </div>
+    <div id="runsOut"></div>
+    <div id="runDetail"></div>
+  </section>
+
+  <section class="card" id="mileage">
+    <div class="card-head">
+      <h2>Mileage</h2>
+      <p>Distance is calculated automatically from laps × track length. Nobody types it in.</p>
+    </div>
+    <div class="inline">
+      <div class="field"><label for="groupBy">Group by</label>
+        <select id="groupBy">
+          <option value="driver">Driver</option>
+          <option value="vehicle">Vehicle</option>
+          <option value="season">Season</option>
+          <option value="test">Test day</option>
+          <option value="run">Run</option>
+        </select></div>
+      <button class="btn" id="mileageBtn" type="button">Show kilometres</button>
+    </div>
+    <div id="mileageOut"></div>
+  </section>
+
+  <section class="card" id="tests">
+    <div class="card-head">
+      <h2>Test days and plan vs actual</h2>
+      <p>Click a test day to compare what was planned with what really happened.</p>
+    </div>
+    <div id="testsOut"></div>
+    <div id="planOut"></div>
+  </section>
+
+  <footer>
+    Data comes from the TDM API · <a href="/docs">API documentation</a>
+  </footer>
+</main>
+
+<script>
+// ---------- small helpers ----------
+const $ = (id) => document.getElementById(id);
+
+// Make text safe before putting it into the page
+function esc(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+// Ask the backend a question and return its answer
+async function getJson(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Error ' + response.status + ' ' + response.statusText);
+  return response.json();
+}
+
+// A coloured label, for words such as "modified" or "cancelled"
+function badge(text) {
+  if (text === null || text === undefined || text === '') return '';
+  const cls = String(text).toLowerCase().replace(/\s+/g, '-');
+  return '<span class="badge b-' + esc(cls) + '">' + esc(text) + '</span>';
+}
+
+// Describe table columns by the names the backend uses
+const BADGE_KEYS = ['outcome', 'status'];
+const cols = (...keys) => keys.map((key) => BADGE_KEYS.includes(key)
+  ? { label: key, html: true, value: (row) => badge(row[key]) }
+  : { label: key.replace(/_/g, ' '), value: (row) => row[key] });
+
+// Turn a list of rows into an HTML table
+function renderTable(rows, columns, idKey) {
+  if (rows.length === 0) return '<p class="empty">No results.</p>';
+  const head = columns.map((c) => '<th>' + esc(c.label) + '</th>').join('');
+  const body = rows.map((row) => {
+    const attrs = idKey ? ' class="clickable" data-id="' + esc(row[idKey]) + '"' : '';
+    const cells = columns.map((c) => {
+      const v = c.value(row);
+      const text = c.html ? v : esc(v);
+      const cls = typeof v === 'number' ? ' class="num"' : '';
+      return '<td' + cls + '>' + text + '</td>';
+    }).join('');
+    return '<tr' + attrs + '>' + cells + '</tr>';
+  }).join('');
+  return '<div class="table-wrap"><table><tr>' + head + '</tr>' + body + '</table></div>';
+}
+
+// Run some work, put its result in a box, and show any error nicely
+async function show(targetId, work) {
+  $(targetId).innerHTML = '<p class="loading">Loading…</p>';
+  try {
+    $(targetId).innerHTML = await work();
+  } catch (err) {
+    $(targetId).innerHTML = '<div class="error">' + esc(err.message) + '</div>';
+  }
+}
+
+// Make table rows in a box clickable (and highlight the chosen one)
+function onRowClick(containerId, handler) {
+  const rows = document.querySelectorAll('#' + containerId + ' tr.clickable');
+  rows.forEach((tr) => {
+    tr.addEventListener('click', () => {
+      rows.forEach((r) => r.classList.remove('selected'));
+      tr.classList.add('selected');
+      handler(tr.dataset.id);
+    });
+  });
+}
+
+// A collapsible section holding a table
+function section(title, rows, columns, open) {
+  return '<details' + (open ? ' open' : '') + '><summary>' + esc(title)
+    + '<span class="count">' + rows.length + '</span></summary>'
+    + renderTable(rows, columns) + '</details>';
+}
+
+// ---------- 1. search runs ----------
+const runColumns = [
+  { label: 'run', value: (r) => r.id },
+  { label: 'date', value: (r) => r.test_date },
+  { label: 'driver', value: (r) => r.driver },
+  { label: 'layout', value: (r) => r.layout },
+  { label: 'compound', value: (r) => r.compound },
+  { label: 'asphalt °C', value: (r) => r.asphalt_temp_c },
+  { label: 'laps', value: (r) => r.lap_count },
+  { label: 'km', value: (r) => r.distance_m === null ? '' : (r.distance_m / 1000).toFixed(2) },
+  { label: 'best lap s', value: (r) => r.best_lap_s },
+];
+
+async function searchRuns() {
+  const filters = {
+    season: $('season').value,
+    driver: $('driver').value,
+    compound: $('compound').value,
+    asphalt_min: $('asphalt_min').value,
+    asphalt_max: $('asphalt_max').value,
+  };
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== '') params.append(key, value);
+  }
+  $('runDetail').innerHTML = '';
+  await show('runsOut', async () => {
+    const rows = await getJson('/runs?' + params.toString());
+    return '<p class="summary"><strong>' + rows.length + '</strong> run(s) found'
+         + (rows.length ? ' · click a row for details' : '') + '</p>'
+         + renderTable(rows, runColumns, 'id');
+  });
+  onRowClick('runsOut', showRun);
+}
+
+async function showRun(id) {
+  await show('runDetail', async () => {
+    const run = await getJson('/runs/' + id);
+    const chips = [
+      run.driver,
+      run.layout + ' (' + run.activity_type + ')',
+      'Tyres: ' + (run.tyre_set || '–') + (run.compound ? ' ' + run.compound : ''),
+      'Setup: ' + (run.setup || '–'),
+      'Asphalt: ' + (run.asphalt_temp_c ?? '–') + ' °C',
+      'Ambient: ' + (run.ambient_temp_c ?? '–') + ' °C',
+    ].map((text) => '<span class="chip">' + esc(text) + '</span>').join('');
+    return '<div class="detail">'
+      + '<h3>Run ' + esc(run.run_number) + ' · ' + esc(run.test_date) + '</h3>'
+      + '<div class="chips">' + chips + '</div>'
+      + section('Laps', run.laps, cols('lap_number', 'lap_time_s', 'penalty_s', 'effective_time_s'), true)
+      + section('Setup changes compared with the previous run', run.setup_changes,
+          cols('parameter', 'corner', 'old_value', 'new_value', 'unit', 'changed_at', 'reason'), true)
+      + section('Full setup used', run.setup_values, cols('parameter', 'corner', 'value', 'unit'), false)
+      + section('Tyre measurements', run.tyre_measurements,
+          cols('phase', 'corner', 'pressure_kpa', 'temp_outer_c', 'temp_center_c', 'temp_inner_c'), false)
+      + section('Alignment', run.alignment, cols('phase', 'corner', 'camber_deg', 'toe_deg'), false)
+      + section('Files', run.files, cols('file_name', 'file_type', 'storage_location', 'size_bytes'), false)
+      + '</div>';
+  });
+  $('runDetail').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ---------- 2. mileage (drawn as bars) ----------
+async function showMileage() {
+  await show('mileageOut', async () => {
+    const rows = await getJson('/mileage?group_by=' + encodeURIComponent($('groupBy').value));
+    if (rows.length === 0) return '<p class="empty">No results.</p>';
+    const max = Math.max(...rows.map((r) => Number(r.km)), 0.001);
+    return rows.map((r) => {
+      const pct = Math.max((Number(r.km) / max) * 100, 2);
+      return '<div class="bar-row">'
+        + '<div>' + esc(r.name) + '</div>'
+        + '<div class="bar-track"><div class="bar-fill" style="width:' + pct.toFixed(1) + '%"></div></div>'
+        + '<div class="bar-value">' + esc(Number(r.km).toFixed(2)) + ' km</div>'
+        + '</div>';
+    }).join('');
+  });
+}
+
+// ---------- 3. test days and plan vs actual ----------
+const testColumns = [
+  { label: 'id', value: (r) => r.id },
+  { label: 'date', value: (r) => r.test_date },
+  { label: 'status', html: true, value: (r) => badge(r.status) },
+  { label: 'season', value: (r) => r.season },
+  { label: 'vehicle', value: (r) => r.vehicle },
+  { label: 'location', value: (r) => r.location },
+  { label: 'km', value: (r) => Math.round(r.km * 100) / 100 },
+];
+
+async function loadTests() {
+  await show('testsOut', async () => {
+    const tests = await getJson('/tests');
+    return renderTable(tests, testColumns, 'id');
+  });
+  onRowClick('testsOut', showPlan);
+}
+
+async function showPlan(testId) {
+  await show('planOut', async () => {
+    const rows = await getJson('/tests/' + testId + '/plan-vs-actual');
+    return '<h3>Plan vs actual · test ' + esc(testId) + '</h3>'
+      + renderTable(rows, cols('plan_number', 'run_number', 'outcome', 'planned_driver',
+          'actual_driver', 'planned_setup', 'actual_setup', 'planned_laps', 'actual_laps',
+          'cancel_reason'));
+  });
+}
+
+// ---------- start-up ----------
+async function fillMenu(selectId, listName, field) {
+  const items = await getJson('/lookup/' + listName);
+  for (const item of items) {
+    const option = document.createElement('option');
+    option.value = item[field];
+    option.textContent = item[field];
+    $(selectId).appendChild(option);
+  }
+}
+
+$('searchBtn').addEventListener('click', searchRuns);
+$('mileageBtn').addEventListener('click', showMileage);
+$('groupBy').addEventListener('change', showMileage);
+$('resetBtn').addEventListener('click', () => {
+  ['season', 'driver', 'compound', 'asphalt_min', 'asphalt_max'].forEach((id) => { $(id).value = ''; });
+  searchRuns();
+});
+['asphalt_min', 'asphalt_max'].forEach((id) =>
+  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') searchRuns(); }));
+
+(async function start() {
+  try {
+    await fillMenu('season', 'seasons', 'name');
+    await fillMenu('driver', 'drivers', 'full_name');
+    await fillMenu('compound', 'tyre-compounds', 'name');
+  } catch (err) {
+    $('runsOut').innerHTML = '<div class="error">' + esc(err.message) + '</div>';
+  }
+  searchRuns();
+  showMileage();
+  loadTests();
+})();
+</script>
+</body>
+</html>
