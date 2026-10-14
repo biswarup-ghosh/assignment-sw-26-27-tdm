@@ -43,3 +43,55 @@ For the final delivery, we require:
 Build a structured historical representation of the team's testing process that engineers can reliably use, query, compare and extend over multiple tests, vehicles and seasons.
 
 Given that this is a large task, do as much as you can and don't worry if you are unable to model everything or have a complete functional application: we put focus on the design choices and the thoughts that were behind them.
+
+---
+
+# Candidate solution: quick start
+
+A test data manager built on SQLite, a FastAPI backend and a single-page frontend.
+
+## Run it (Mac / Linux)
+
+Requirements: Python 3.10 or newer.
+
+```
+bash tdm.sh setup     # creates .venv, installs the libraries, builds the database with seed data
+bash tdm.sh run       # starts the app
+```
+
+Open http://127.0.0.1:8000 for the web page and http://127.0.0.1:8000/docs for the interactive
+API documentation. Stop the app with `Ctrl + C`.
+
+Other commands: `bash tdm.sh test` (automated tests), `bash tdm.sh reset` (rebuild the database
+from the SQL files), `bash tdm.sh import-dry` and `bash tdm.sh import` (legacy spreadsheet importer
+with the sample file).
+
+## Run it with Docker
+
+```
+docker compose up --build
+```
+
+Open http://localhost:8000. Stop it with `Ctrl + C`, or `docker compose down`. Data changes made
+while the container runs are not kept when the container is removed. Tested on macOS with Docker Desktop.
+
+## What is where
+
+| Path | Content |
+|---|---|
+| `db/schema.sql` | tables, constraints, triggers and views |
+| `db/seed.sql` | realistic example data |
+| `create_db.py` | builds `tdm.db` from the two SQL files |
+| `backend/app.py` | the API (FastAPI) |
+| `frontend/index.html` | the web page |
+| `tools/import_legacy.py` | importer for the old spreadsheets (CSV) |
+| `data/legacy_sample.csv` | a deliberately messy sample file |
+| `tests/` | automated tests for mileage, queries, constraints and the importer |
+| `docs/DESIGN.md` | ER diagram, conventions, views and limitations |
+| `docs/IMPORT.md` | import strategy |
+| `docs/ToughtProcess.md` | reasoning behind the main decisions |
+
+## Status
+
+Done: database design with ER diagram, backend with filtering and mileage endpoints, frontend,
+importer, automated tests, setup scripts. Known gaps are listed in `docs/DESIGN.md`, section 7.
